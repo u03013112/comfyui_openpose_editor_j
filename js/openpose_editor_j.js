@@ -334,16 +334,19 @@ class OpenPose {
 
         this.canvas.on("object:moving", (e) => {
             updateLines(e.target);
+            this.uploadImage();
         });
 
         this.canvas.on("object:scaling", (e) => {
             updateLines(e.target);
             this.canvas.renderAll();
+            this.uploadImage();
         });
 
         this.canvas.on("object:rotating", (e) => {
             updateLines(e.target);
             this.canvas.renderAll();
+            this.uploadImage();
         });
 
         this.canvas.on("object:modified", () => {
@@ -397,6 +400,7 @@ class OpenPose {
         this.canvas.clear();
         this.canvas.backgroundColor = "#000";
         this.addPose();
+        this.uploadImage();
     }
 
     updateHistoryData() {
