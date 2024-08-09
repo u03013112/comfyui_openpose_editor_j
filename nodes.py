@@ -25,10 +25,19 @@ async def my_function(request):
 
     # 将图像转换为 NumPy 数组
     numpy_array = np.array(image)
+    # # 确保图像模式为 RGB
+    # if image.mode != 'RGB':
+    #     image = image.convert('RGB')
+
+    # print(image.mode)
+    # print(numpy_array)
+
+    # 归一化处理，将颜色值从 [0, 255] 范围转换到 [0, 1] 范围
+    normalized_array = numpy_array / 255.0
 
     global g_npImage
 
-    g_npImage = numpy_array
+    g_npImage = normalized_array
 
     return web.json_response({})
 
@@ -62,7 +71,6 @@ class OpenPoseEditorJ:
     global g_npImage
     if g_npImage is not None:
         image = g_npImage
-        g_npImage = None
     else:
         image = np.random.rand(256, 256, 3).astype(np.float32)
 

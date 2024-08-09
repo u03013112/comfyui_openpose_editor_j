@@ -355,7 +355,6 @@ class OpenPose {
             this.undo_history.push(this.getJSON());
             this.redo_history.length = 0;
             this.history_change = true;
-            // this.uploadPoseFile(this.node.name);
             this.uploadImage();
         });
 
@@ -377,7 +376,7 @@ class OpenPose {
             this.canvas.renderAll();
             this.lockMode = false;
             this.history_change = true;
-            // this.uploadPoseFile(this.node.name);
+            this.uploadImage();
         }
     }
 
@@ -390,7 +389,7 @@ class OpenPose {
             this.canvas.renderAll();
             this.lockMode = false;
             this.history_change = true;
-            // this.uploadPoseFile(this.node.name);
+            this.uploadImage();
         }
     }
 
@@ -423,28 +422,12 @@ class OpenPose {
         // 上传 Base64 编码字符串到服务器
         const uploadBase64Image = async (base64Image) => {
             try {
-                console.log("Uploading image...");
+                // console.log("Uploading image...");
                 const body = new FormData();
 
                 body.append('image',base64Image);
+                // console.log("Uploading image...",base64Image);
                 api.fetchApi("/upload_to_j", { method: "POST", body, });
-                
-                // const response = await fetch("/upload_to_j", {
-                //     method: "POST",
-                //     headers: {
-                //         "Content-Type": "application/json",
-                //     },
-                //     body: JSON.stringify({
-                //         image: base64Image
-                //     }),
-                // });
-    
-                // if (response.status === 200) {
-                //     const data = await response.json();
-                //     console.log("Image uploaded successfully:", data);
-                // } else {
-                //     alert(response.status + " - " + response.statusText);
-                // }
             } catch (error) {
                 console.error("Error uploading image:", error);
             }
@@ -460,54 +443,6 @@ class OpenPose {
             }
         }, "image/png");
     }
-    
-    
-
-    // uploadPoseFile(fileName) {
-    //     // Upload pose to temp folder ComfyUI
-
-    //     const uploadFile = async (blobFile) => {
-    //         try {
-    //             const resp = await fetch("/upload/image", {
-    //                 method: "POST",
-    //                 body: blobFile,
-    //             });
-
-    //             if (resp.status === 200) {
-    //                 const data = await resp.json();
-
-    //                 if (!this.image.options.values.includes(data.name)) {
-    //                     this.image.options.values.push(data.name);
-    //                 }
-
-    //                 this.image.value = data.name;
-    //                 this.updateHistoryData();
-    //             } else {
-    //                 alert(resp.status + " - " + resp.statusText);
-    //             }
-    //         } catch (error) {
-    //             console.error(error);
-    //         }
-    //     };
-
-    //     this.canvas.lowerCanvasEl.toBlob(function (blob) {
-    //         let formData = new FormData();
-    //         formData.append("image", blob, fileName);
-    //         formData.append("overwrite", "true");
-    //         formData.append("type", "temp");
-    //         uploadFile(formData);
-    //     }, "image/png");
-    //     // - end
-
-    //     const callb = this.node.callback,
-    //         self = this;
-    //     this.image.callback = function () {
-    //         this.image.value = self.node.name;
-    //         if (callb) {
-    //             return callb.apply(this, arguments);
-    //         }
-    //     };
-    // }
 
     getJSON() {
         const json = {
@@ -720,23 +655,6 @@ app.registerExtension({
     },
     async setup(app) {
         console.log("OpenPose.Editor.Plus.J");
-        // alert("OpenPose.Editor.Plus.J");
-        // let openPoseNode = app.graph._nodes.filter((wi) => wi.type == "OpenPose.Editor.Plus.J");
-
-        // if (openPoseNode.length) {
-        //     openPoseNode.map((n) => {
-        //         console.log(`Setup PoseNode: ${n.name}`);
-        //         let widgetImage = n.widgets.find((w) => w.name == "image");
-        //         if (widgetImage && Object.hasOwn(LS_Poses, n.name)) {
-        //             let pose_ls = LS_Poses[n.name].undo_history;
-        //             n.openPose.loadPreset(
-        //                 pose_ls.length > 0
-        //                     ? pose_ls[pose_ls.length - 1]
-        //                     : { keypoints: default_keypoints }
-        //             );
-        //         }
-        //     });
-        // }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "OpenPose.Editor.Plus.J") {
@@ -773,7 +691,7 @@ app.registerExtension({
 
                 createOpenPose.apply(this, [this, nodeNamePNG, {}, app]);
                 setTimeout(() => {
-                    // this.openPose.uploadPoseFile(nodeNamePNG);
+                    
                 }, 1);
 
                 this.setSize([530, 620]);
