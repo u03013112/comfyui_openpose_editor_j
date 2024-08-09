@@ -1,36 +1,45 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from PIL import Image
-from nodes import LoadImage
+import os
+import folder_paths
+import hashlib
+import torch
+import numpy as np
 
-class JImagePreviewNode:
-    def __init__(self):
-        pass
-    
-    @classmethod
-    def INPUT_TYPES(s):
-        return {
-            "required":
-                {
-                    "image": ("STRING", { "default": "" })
-                },
+class OpenPoseEditorJ:
+  @classmethod
+  def INPUT_TYPES(self):
+    temp_dir = folder_paths.get_temp_directory()
+
+    if not os.path.isdir(temp_dir):
+      os.makedirs(temp_dir)
+
+    temp_dir = folder_paths.get_temp_directory()
+
+    return {"required":
+              {"image": (sorted(os.listdir(temp_dir)),)},
             }
 
-    RETURN_TYPES = ("IMAGE",)
-    FUNCTION = "load_image"
-    CATEGORY = "J Image Processing"
+  RETURN_TYPES = ("IMAGE",)
+  FUNCTION = "output_pose"
 
-    def load_image(self, image):
-        image, mask = LoadImage.load_image(self, image)
-        return (image,)
+  CATEGORY = "image"
 
-    
+  def output_pose(self, image):
+    image_path = os.path.join(folder_paths.get_temp_directory(), image)
 
-# 注册节点
+    i = Image.open(image_path)
+    image = i.convert("RGB")
+    image = np.array(image).astype(np.float32) / 255.0
+    image = torch.from_numpy(image)[None,]
+
+    return (image,)
+
+
+
 NODE_CLASS_MAPPINGS = {
-    "JImagePreviewNode": JImagePreviewNode
+    "OpenPose.Editor.Plus.J": OpenPoseEditorJ
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "JImagePreviewNode": "Image Preview Node"
+    "OpenPose.Editor.Plus.J": "OpenPose Editor Plus J",
 }

@@ -12,7 +12,7 @@ __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
 
 def update_javascript():
     extensions_folder = os.path.join(os.path.dirname(os.path.realpath(__main__.__file__)),
-                                    "web" + os.sep + "extensions" + os.sep + "ComfyUI-OpenPose-Editor")
+                                    "web" + os.sep + "extensions" + os.sep + "ComfyUI-OpenPose-Editor-J")
     javascript_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "js")
 
     if not os.path.exists(extensions_folder):
