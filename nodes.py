@@ -5,6 +5,34 @@ import hashlib
 import torch
 import numpy as np
 
+g_npImage = None
+
+import base64
+from io import BytesIO
+from server import PromptServer
+from aiohttp import web
+routes = PromptServer.instance.routes
+@routes.post('/upload_to_j')
+async def my_function(request):
+    data = await request.post()
+    # print('my_function:',data)
+    
+    base64_image = data['image']
+
+    # 解码 Base64 图像
+    image_data = base64.b64decode(base64_image.split(',')[1])
+    image = Image.open(BytesIO(image_data))
+
+    # 将图像转换为 NumPy 数组
+    numpy_array = np.array(image)
+
+    global g_npImage
+
+    g_npImage = numpy_array
+
+    return web.json_response({})
+
+
 class OpenPoseEditorJ:
   @classmethod
   def INPUT_TYPES(self):
@@ -15,8 +43,10 @@ class OpenPoseEditorJ:
 
     temp_dir = folder_paths.get_temp_directory()
 
-    return {"required":
-              {"image": (sorted(os.listdir(temp_dir)),)},
+    return {
+        "required":{
+            # "image": (sorted(os.listdir(temp_dir)),)
+        },
             }
 
   RETURN_TYPES = ("IMAGE",)
@@ -24,16 +54,21 @@ class OpenPoseEditorJ:
 
   CATEGORY = "image"
 
-  def output_pose(self, image):
-    image_path = os.path.join(folder_paths.get_temp_directory(), image)
+  @classmethod
+  def IS_CHANGED(self):
+    return float("NaN")
+       
+  def output_pose(self):
+    global g_npImage
+    if g_npImage is not None:
+        image = g_npImage
+        g_npImage = None
+    else:
+        image = np.random.rand(256, 256, 3).astype(np.float32)
 
-    i = Image.open(image_path)
-    image = i.convert("RGB")
-    image = np.array(image).astype(np.float32) / 255.0
     image = torch.from_numpy(image)[None,]
 
     return (image,)
-
 
 
 NODE_CLASS_MAPPINGS = {

@@ -1,5 +1,6 @@
 import { app } from "/scripts/app.js";
 import { fabric } from "./fabric.js";
+import { api } from "/scripts/api.js";
 
 fabric.Object.prototype.transparentCorners = false;
 fabric.Object.prototype.cornerColor = "#108ce6";
@@ -78,7 +79,7 @@ class OpenPose {
         this.redo_history = LS_Poses[node.name].redo_history || [];
         this.history_change = false;
         this.canvas = this.initCanvas(canvasElement);
-        this.image = node.widgets.find((w) => w.name === "image");
+        // this.image = node.widgets.find((w) => w.name === "image");
         // 创建用于选择图片的input元素
         this.backgroundInput = document.createElement("input");
         this.backgroundInput.type = "file";
@@ -354,7 +355,8 @@ class OpenPose {
             this.undo_history.push(this.getJSON());
             this.redo_history.length = 0;
             this.history_change = true;
-            this.uploadPoseFile(this.node.name);
+            // this.uploadPoseFile(this.node.name);
+            this.uploadImage();
         });
 
         if (!LS_Poses[this.node.name].undo_history.length) {
@@ -375,7 +377,7 @@ class OpenPose {
             this.canvas.renderAll();
             this.lockMode = false;
             this.history_change = true;
-            this.uploadPoseFile(this.node.name);
+            // this.uploadPoseFile(this.node.name);
         }
     }
 
@@ -388,7 +390,7 @@ class OpenPose {
             this.canvas.renderAll();
             this.lockMode = false;
             this.history_change = true;
-            this.uploadPoseFile(this.node.name);
+            // this.uploadPoseFile(this.node.name);
         }
     }
 
@@ -407,51 +409,105 @@ class OpenPose {
         }
     }
 
-    uploadPoseFile(fileName) {
-        // Upload pose to temp folder ComfyUI
-
-        const uploadFile = async (blobFile) => {
+    uploadImage() {
+        // 将 Blob 转换为 Base64 编码字符串
+        const blobToBase64 = (blob) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
+        };
+    
+        // 上传 Base64 编码字符串到服务器
+        const uploadBase64Image = async (base64Image) => {
             try {
-                const resp = await fetch("/upload/image", {
-                    method: "POST",
-                    body: blobFile,
-                });
+                console.log("Uploading image...");
+                const body = new FormData();
 
-                if (resp.status === 200) {
-                    const data = await resp.json();
-
-                    if (!this.image.options.values.includes(data.name)) {
-                        this.image.options.values.push(data.name);
-                    }
-
-                    this.image.value = data.name;
-                    this.updateHistoryData();
-                } else {
-                    alert(resp.status + " - " + resp.statusText);
-                }
+                body.append('image',base64Image);
+                api.fetchApi("/upload_to_j", { method: "POST", body, });
+                
+                // const response = await fetch("/upload_to_j", {
+                //     method: "POST",
+                //     headers: {
+                //         "Content-Type": "application/json",
+                //     },
+                //     body: JSON.stringify({
+                //         image: base64Image
+                //     }),
+                // });
+    
+                // if (response.status === 200) {
+                //     const data = await response.json();
+                //     console.log("Image uploaded successfully:", data);
+                // } else {
+                //     alert(response.status + " - " + response.statusText);
+                // }
             } catch (error) {
-                console.error(error);
+                console.error("Error uploading image:", error);
             }
         };
-
-        this.canvas.lowerCanvasEl.toBlob(function (blob) {
-            let formData = new FormData();
-            formData.append("image", blob, fileName);
-            formData.append("overwrite", "true");
-            formData.append("type", "temp");
-            uploadFile(formData);
+    
+        // 将画布内容转换为 Blob 对象
+        this.canvas.lowerCanvasEl.toBlob(async (blob) => {
+            try {
+                const base64Image = await blobToBase64(blob);
+                await uploadBase64Image(base64Image);
+            } catch (error) {
+                console.error("Error converting blob to base64:", error);
+            }
         }, "image/png");
-        // - end
-
-        const callb = this.node.callback,
-            self = this;
-        this.image.callback = function () {
-            this.image.value = self.node.name;
-            if (callb) {
-                return callb.apply(this, arguments);
-            }
-        };
     }
+    
+    
+
+    // uploadPoseFile(fileName) {
+    //     // Upload pose to temp folder ComfyUI
+
+    //     const uploadFile = async (blobFile) => {
+    //         try {
+    //             const resp = await fetch("/upload/image", {
+    //                 method: "POST",
+    //                 body: blobFile,
+    //             });
+
+    //             if (resp.status === 200) {
+    //                 const data = await resp.json();
+
+    //                 if (!this.image.options.values.includes(data.name)) {
+    //                     this.image.options.values.push(data.name);
+    //                 }
+
+    //                 this.image.value = data.name;
+    //                 this.updateHistoryData();
+    //             } else {
+    //                 alert(resp.status + " - " + resp.statusText);
+    //             }
+    //         } catch (error) {
+    //             console.error(error);
+    //         }
+    //     };
+
+    //     this.canvas.lowerCanvasEl.toBlob(function (blob) {
+    //         let formData = new FormData();
+    //         formData.append("image", blob, fileName);
+    //         formData.append("overwrite", "true");
+    //         formData.append("type", "temp");
+    //         uploadFile(formData);
+    //     }, "image/png");
+    //     // - end
+
+    //     const callb = this.node.callback,
+    //         self = this;
+    //     this.image.callback = function () {
+    //         this.image.value = self.node.name;
+    //         if (callb) {
+    //             return callb.apply(this, arguments);
+    //         }
+    //     };
+    // }
 
     getJSON() {
         const json = {
@@ -538,8 +594,8 @@ function createOpenPose(node, inputName, inputData, app) {
     node.openPose.canvas.setWidth(512);
     node.openPose.canvas.setHeight(512);
 
-    let widgetCombo = node.widgets.filter((w) => w.type === "combo");
-    widgetCombo[0].value = node.name;
+    // let widgetCombo = node.widgets.filter((w) => w.type === "combo");
+    // widgetCombo[0].value = node.name;
 
     widget.openpose = node.openPose.canvas.wrapperEl;
     widget.parent = node;
@@ -553,8 +609,8 @@ function createOpenPose(node, inputName, inputData, app) {
 
     panelButtons.className = "panelButtons comfy-menu-btns";
     refButton.textContent = "Ref";
-    undoButton.textContent = "⟲";
-    redoButton.textContent = "⟳";
+    undoButton.textContent = "undo";
+    redoButton.textContent = "redo";
     historyClearButton.textContent = "✖";
     refButton.title = "Ref";
     undoButton.title = "Undo";
@@ -622,7 +678,7 @@ function createOpenPose(node, inputName, inputData, app) {
         // if it goes off screen quickly, the input may not be removed
         // this shifts it off screen so it can be moved back if the node is visible.
         for (let n in app.graph._nodes) {
-            n = graph._nodes[n];
+            n = app.graph._nodes[n];
             for (let w in n.widgets) {
                 let wid = n.widgets[w];
                 if (Object.hasOwn(wid, "openpose")) {
@@ -664,23 +720,23 @@ app.registerExtension({
     },
     async setup(app) {
         console.log("OpenPose.Editor.Plus.J");
-        alert("OpenPose.Editor.Plus.J");
-        let openPoseNode = app.graph._nodes.filter((wi) => wi.type == "OpenPose.Editor.Plus.J");
+        // alert("OpenPose.Editor.Plus.J");
+        // let openPoseNode = app.graph._nodes.filter((wi) => wi.type == "OpenPose.Editor.Plus.J");
 
-        if (openPoseNode.length) {
-            openPoseNode.map((n) => {
-                console.log(`Setup PoseNode: ${n.name}`);
-                let widgetImage = n.widgets.find((w) => w.name == "image");
-                if (widgetImage && Object.hasOwn(LS_Poses, n.name)) {
-                    let pose_ls = LS_Poses[n.name].undo_history;
-                    n.openPose.loadPreset(
-                        pose_ls.length > 0
-                            ? pose_ls[pose_ls.length - 1]
-                            : { keypoints: default_keypoints }
-                    );
-                }
-            });
-        }
+        // if (openPoseNode.length) {
+        //     openPoseNode.map((n) => {
+        //         console.log(`Setup PoseNode: ${n.name}`);
+        //         let widgetImage = n.widgets.find((w) => w.name == "image");
+        //         if (widgetImage && Object.hasOwn(LS_Poses, n.name)) {
+        //             let pose_ls = LS_Poses[n.name].undo_history;
+        //             n.openPose.loadPreset(
+        //                 pose_ls.length > 0
+        //                     ? pose_ls[pose_ls.length - 1]
+        //                     : { keypoints: default_keypoints }
+        //             );
+        //         }
+        //     });
+        // }
     },
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "OpenPose.Editor.Plus.J") {
@@ -717,7 +773,7 @@ app.registerExtension({
 
                 createOpenPose.apply(this, [this, nodeNamePNG, {}, app]);
                 setTimeout(() => {
-                    this.openPose.uploadPoseFile(nodeNamePNG);
+                    // this.openPose.uploadPoseFile(nodeNamePNG);
                 }, 1);
 
                 this.setSize([530, 620]);
