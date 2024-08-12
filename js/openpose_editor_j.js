@@ -183,18 +183,21 @@ class OpenPose {
             c.line3 = line3;
             c.line4 = line4;
             c.line5 = line5;
+            c.isPose = true; // 添加自定义属性
 
             return c;
         };
 
         const makeLine = (coords, color) => {
-            return new fabric.Line(coords, {
+            let line = new fabric.Line(coords, {
                 fill: color,
                 stroke: color,
                 strokeWidth: 10,
                 selectable: false,
                 evented: false,
             });
+            line.isPose = true; // 添加自定义属性
+            return line;
         };
 
         const lines = [];
@@ -426,27 +429,47 @@ class OpenPose {
         // 上传 Base64 编码字符串到服务器
         const uploadBase64Image = async (base64Image) => {
             try {
-                // console.log("Uploading image...");
                 const body = new FormData();
-
-                body.append('image',base64Image);
-                // console.log("Uploading image...",base64Image);
-                api.fetchApi("/upload_to_j", { method: "POST", body, });
+                body.append('image', base64Image);
+                await api.fetchApi("/upload_to_j", { method: "POST", body });
             } catch (error) {
                 console.error("Error uploading image:", error);
             }
         };
     
-        // 将画布内容转换为 Blob 对象
-        this.canvas.lowerCanvasEl.toBlob(async (blob) => {
+        // 创建一个临时画布
+        const tempCanvas = new fabric.Canvas(null, {
+            width: this.canvas.width,
+            height: this.canvas.height,
+        });        
+    
+        // 复制需要的对象到临时画布
+        this.canvas.forEachObject(function(obj) {
+            if (obj.isPose) { // 只处理具有 isPose 属性的对象
+                const clonedObj = fabric.util.object.clone(obj);
+                tempCanvas.add(clonedObj);
+            }
+        });
+
+        // 确保所有对象都正确渲染
+        tempCanvas.renderAll();
+    
+        // 将临时画布内容转换为 Blob 对象
+        tempCanvas.lowerCanvasEl.toBlob(async (blob) => {
             try {
                 const base64Image = await blobToBase64(blob);
+                console.log('base64:', base64Image);
                 await uploadBase64Image(base64Image);
             } catch (error) {
                 console.error("Error converting blob to base64:", error);
+            } finally {
+                // 清理临时画布
+                tempCanvas.clear();
+                tempCanvas.dispose();
             }
         }, "image/png");
     }
+    
 
     getJSON() {
         const json = {
