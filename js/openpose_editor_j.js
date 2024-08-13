@@ -444,7 +444,7 @@ class OpenPose {
     resetCanvas() {
         this.canvas.clear();
         this.canvas.backgroundColor = "#000";
-        this.addPose();
+        // this.addPose();
         this.uploadImage();
     }
 
@@ -648,7 +648,7 @@ function createOpenPose(node, inputName, inputData, app) {
         node.openPose.addPose();
     });
 
-    node.addWidget("button", "Reset pose", "reset_pose", () => {
+    node.addWidget("button", "clean all", "reset_pose", () => {
         node.openPose.resetCanvas();
     });
     // Add buttons Reference image
