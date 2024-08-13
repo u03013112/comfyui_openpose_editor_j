@@ -406,10 +406,10 @@ class OpenPose {
             this.uploadImage();
         });
 
-        if (!LS_Poses[this.node.name].undo_history.length) {
-            this.setPose(default_keypoints);
-            this.undo_history.push(this.getJSON());
-        }
+        // if (!LS_Poses[this.node.name].undo_history.length) {
+        //     this.setPose(default_keypoints);
+        //     this.undo_history.push(this.getJSON());
+        // }
         return this.canvas;
     }
 
