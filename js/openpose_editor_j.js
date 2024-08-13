@@ -156,6 +156,48 @@ class OpenPose {
             keypoints = default_keypoints;
         }
 
+
+        // Calculate the scaling factor and offset to center the pose
+        const canvasHeight = this.canvas.getHeight();
+        const canvasWidth = this.canvas.getWidth();
+        const targetHeight = canvasHeight * 0.8;
+        const poseHeight = Math.max(...keypoints.map(kp => kp[1])) - Math.min(...keypoints.map(kp => kp[1]));
+        const scaleFactor = targetHeight / poseHeight;
+        const poseWidth = Math.max(...keypoints.map(kp => kp[0])) - Math.min(...keypoints.map(kp => kp[0]));
+        const targetWidth = poseWidth * scaleFactor;
+        
+        // Calculate the original center of the pose
+        const poseCenterX = (Math.max(...keypoints.map(kp => kp[0])) + Math.min(...keypoints.map(kp => kp[0]))) / 2;
+        const poseCenterY = (Math.max(...keypoints.map(kp => kp[1])) + Math.min(...keypoints.map(kp => kp[1]))) / 2;
+
+        // Calculate the canvas center
+        const canvasCenterX = canvasWidth / 2;
+        const canvasCenterY = canvasHeight / 2;
+
+        // Calculate the offset to center the pose on the canvas
+        const offsetX = canvasCenterX - (poseCenterX * scaleFactor);
+        const offsetY = canvasCenterY - (poseCenterY * scaleFactor);
+
+        // Scale and offset keypoints
+        keypoints = keypoints.map(([x, y]) => [
+            x * scaleFactor + offsetX,
+            y * scaleFactor + offsetY
+        ]);
+
+        let scaledRadius = 5;
+        let scaledLineWidth = 10;
+
+        if (scaleFactor < 1) {
+            // Define the minimum values for radius and line width
+            const minRadius = 1;
+            const minLineWidth = 2;
+
+            // Calculate the scaled radius and line width
+            scaledRadius = Math.max(5 * scaleFactor, minRadius);
+            scaledLineWidth = Math.max(10 * scaleFactor, minLineWidth);
+        }
+        
+
         const group = new fabric.Group();
 
         const makeCircle = (
@@ -172,7 +214,7 @@ class OpenPose {
                 left: left,
                 top: top,
                 strokeWidth: 1,
-                radius: 5,
+                radius: scaledRadius,
                 fill: color,
                 stroke: color,
             });
@@ -192,7 +234,7 @@ class OpenPose {
             let line = new fabric.Line(coords, {
                 fill: color,
                 stroke: color,
-                strokeWidth: 10,
+                strokeWidth: scaledLineWidth,
                 selectable: false,
                 evented: false,
             });
