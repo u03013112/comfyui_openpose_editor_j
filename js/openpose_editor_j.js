@@ -445,6 +445,7 @@ class OpenPose {
         this.canvas.clear();
         this.canvas.backgroundColor = "#000";
         // this.addPose();
+        this.canvas.setBackgroundImage(null, this.canvas.renderAll.bind(this.canvas)); // 清除背景图像
         this.uploadImage();
     }
 
